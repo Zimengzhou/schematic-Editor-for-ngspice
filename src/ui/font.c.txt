@@ -1,0 +1,160 @@
+#include <SDL_ttf.h>
+#include "game.h"
+#include "Widget.h"
+#include "font.h"
+
+typedef struct texture_Texture TextTexArray;
+struct texture_Texture
+{
+    TTF_Font *font;
+    SDL_Rect dest;
+    SDL_Color color;
+    SDL_Texture *text_texture;
+    SDL_Renderer *renderer;
+    int *index;
+    TextTexArray *next;
+};
+
+static TextTexArray *textTextures;
+static SDL_bool canPresent; /*文字纹理为空*/
+
+static SZM_Text addTexture(TTF_Font* font, SDL_Texture *texture,SDL_Color color, SDL_Rect dest, SDL_Renderer *renderer)
+{
+    TextTexArray *newNode = (TextTexArray *)calloc(1, sizeof(TextTexArray));
+    newNode->font = font;
+    newNode->color = color;
+    newNode->dest = dest;
+    newNode->renderer = renderer;
+    newNode->text_texture = texture;
+    newNode->index = (int *)calloc(1, sizeof(int));
+    newNode->next = NULL;
+
+    if (textTextures==NULL)
+    {
+        textTextures = newNode;
+        *textTextures->index = 0;
+    }
+    else
+    {
+        TextTexArray *temp = textTextures;
+        int index = 1;
+        while (temp->next)
+        {
+            index++;
+            temp = temp->next;
+        }
+        *newNode->index = index;
+        temp->next = newNode;
+    }
+    canPresent = SDL_TRUE;
+    return newNode->index;
+}
+
+int SZM_Font_Init()
+{
+
+    textTextures = NULL;
+    canPresent = SDL_FALSE;
+    return 0;
+}
+
+SZM_Text SZM_CreateText(TTF_Font *font, const char *str, Game *game, int x, int y, Uint8 r,Uint8 g, Uint8 b)
+{
+    SDL_Color color = {r, g, b, 255};
+    SDL_Surface *text_sur = TTF_RenderUTF8_Blended_Wrapped(font, str, color,1820);
+    SDL_Texture *text_text = SDL_CreateTextureFromSurface(game->renderer, text_sur);
+    SDL_Rect dest = {x, y, text_sur->w, text_sur->h};
+    // SDL_Log("text width= %d, height= %d ", dest.w, dest.h);
+    SDL_FreeSurface(text_sur);
+    return addTexture(font, text_text, color, dest, game->renderer);
+}
+static TextTexArray* LocateByIndex(SZM_Text textIndex)
+{
+    if (textTextures == NULL)
+        return NULL;
+    TextTexArray *temp = textTextures;
+    int index = *textIndex;
+    while(index)
+    {
+        temp = temp->next;
+        index--;
+    }
+    return temp;
+}
+
+void SZM_GetSize(int *w, int *h, SZM_Text textIndex)
+{
+    TextTexArray *temp = LocateByIndex(textIndex);
+    SDL_QueryTexture(temp->text_texture, NULL, NULL, w, h);
+}
+int SZM_SetText(SZM_Text textIndex, const char *str)
+{
+    TextTexArray *temp = LocateByIndex(textIndex);
+    if (temp == NULL)
+    {
+        return -1;
+    }
+    else
+    {
+        SDL_DestroyTexture(temp->text_texture);
+        SDL_Surface *text_surf = TTF_RenderUTF8_Blended_Wrapped(temp->font, str, temp->color,1720);
+        temp->text_texture = SDL_CreateTextureFromSurface(temp->renderer, text_surf);
+        temp->dest.w = text_surf->w;
+        temp->dest.h = text_surf->h;
+        SDL_FreeSurface(text_surf);
+        return 0;
+    }
+}
+
+// void SZM_SetTextColor(SZM_Text textIndex, Uint8 r, Uint8 g, Uint8 b)
+// {
+//     TextTexArray *temp = LocateByIndex(textIndex);
+//     if (temp == NULL)
+//     {
+//     }
+//     else
+//     {
+//         temp->color.r = r;
+//         temp->color.g = g;
+//         temp->color.b = b;
+//         SDL_DestroyTexture(temp->text_texture);
+//         SDL_Surface *text_surf = TTF_RenderUTF8_Blended(temp->font,)
+//     }
+    
+// }
+
+void SZM_Font_Present()
+{
+    SDL_bool tips = SDL_TRUE;
+    static SDL_bool tips_last = SDL_FALSE;
+    if (canPresent)
+    {
+        TextTexArray *textures = textTextures;
+        while (textures != NULL)
+        {
+            SDL_RenderCopy(textures->renderer, textures->text_texture, NULL, &textures->dest);
+            textures = textures->next;
+        }
+        tips = SDL_FALSE;
+    }
+
+    if(tips && tips_last != tips)
+    {
+        SDL_Log("没有文字需要显示");
+    }
+    tips_last = tips;
+}
+
+void SZM_Font_dispose()
+{
+    TextTexArray *textures = textTextures;
+    while (textures!=NULL)
+    {
+        TextTexArray *next = textures->next;
+        SDL_DestroyTexture(textures->text_texture);
+        free(textures);
+        textures = next;
+    }
+    textTextures = NULL;
+    canPresent = SDL_FALSE;
+}

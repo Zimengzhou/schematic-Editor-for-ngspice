@@ -1,0 +1,4 @@
+build/
+.cache/
+kicad_example/
+resources/
