@@ -3,9 +3,11 @@
 #include "schgrid.h"
 #include <SDL_log.h>
 #include <SDL_mouse.h>
+#include <SDL_rect.h>
 #include <SDL_render.h>
 #include <SDL_scancode.h>
 #include <SDL_stdinc.h>
+#include <SDL_surface.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,9 +17,15 @@ Wire defaultWire =
 {
     .color = {0,150, 0, 255},
     .width = 3,
-    .netID = 0,
     .divide_points = NULL,
     .divide_counts = 0,
+    .netID = 0,
+};
+
+Junction defaultJunction = 
+{
+    .width = 5,
+    .color = {0, 160, 0,255},
 };
 
 static int dot_in_segment_not_start_and_end(int point[2], int startpoint[2], int endpoint[2]);
@@ -29,6 +37,10 @@ void Sch_init()
     schElements.wires = (Wire*)calloc(sizeof(Wire), 1);
     schElements.wires[0] = defaultWire;
     schElements.wire_counts = 0;
+
+    schElements.junctions = (Junction*)calloc(sizeof(Junction), 1); 
+    schElements.junctions[0] = defaultJunction;
+    schElements.junction_counts = 0;
 }
 
 void Sch_createWire(int x, int y)
@@ -41,7 +53,6 @@ void Sch_createWire(int x, int y)
     schElements.wires[schElements.wire_counts-1].x1 = x;
     schElements.wires[schElements.wire_counts-1].y1 = y;
 }
-
 
 
 //计算线的起始坐标，并设置
@@ -81,15 +92,17 @@ void Sch_draw_wire()
     w2->x1 = x;w2->y1 = y;
 }
 
+void Sch_createJunction(int x, int y)
+{
+    schElements.junctions = (Junction*)realloc(schElements.junctions, sizeof(Junction)*(schElements.junction_counts+1));    
+    schElements.junctions[schElements.junction_counts] = defaultJunction;
+    schElements.junctions[schElements.junction_counts].x = x;
+    schElements.junctions[schElements.junction_counts].y = y;
+    schElements.junction_counts++;
+}
+
 void Sch_draw(SDL_Renderer* renderer)
 {
-    /*    if (schElements.wires!=NULL) 
-          {
-          free(schElements.wires);
-          schElements.wires = NULL;
-          schElements.wire_counts = 0;
-          }
-          */
     Wire w;
     for (int i = 0; i < schElements.wire_counts; i++) 
     {
@@ -108,6 +121,16 @@ void Sch_draw(SDL_Renderer* renderer)
         SDL_RenderDrawLineF(renderer, x1-0.9, y1-0.9, x2-0.9, y2-0.9);
         SDL_RenderDrawLineF(renderer, x1+0.9, y1+0.9, x2+0.9, y2+0.9);
 
+    }
+    Junction junction;
+    for (int i = 0; i < schElements.junction_counts; i++) 
+    {
+        junction = schElements.junctions[i];
+        SDL_SetRenderDrawColor(renderer, junction.color.r, junction.color.g, junction.color.b, junction.color.a);   
+        float x = junction.x * Grid_get_distance() + Grid_get_position().x;
+        float y = junction.y * Grid_get_distance() + Grid_get_position().y;
+        SDL_FRect rect = {x-4.1, y-4.1, 8.2, 8.2};
+        SDL_RenderFillRectF(renderer, &rect);
     }
 
 }
@@ -205,6 +228,8 @@ static void parse_divide_wires()
                 schElements.wires[i].divide_counts++;
                 schElements.wires[i].divide_points[(schElements.wires[i].divide_counts-1)*2] = x1_ - x1;
                 schElements.wires[i].divide_points[(schElements.wires[i].divide_counts-1)*2+1] = y1_ - y1;
+
+                Sch_createJunction(x1_, y1_);   
                 continue;
             }
             if (bei_bh_ndd2 && !bh_ndd1 && !bh_ndd2) {
@@ -213,6 +238,7 @@ static void parse_divide_wires()
                 schElements.wires[i].divide_counts++;
                 schElements.wires[i].divide_points[(schElements.wires[i].divide_counts-1)*2] = x2_ - x1;
                 schElements.wires[i].divide_points[(schElements.wires[i].divide_counts-1)*2+1] = y2_ - y1;
+                Sch_createJunction(x2_, y2_);   
                 continue;
             }
 

@@ -41,6 +41,7 @@ typedef struct SchElements
     int junction_counts;
 }SchElements;
 
+
 void Sch_init();
 void Sch_draw(SDL_Renderer*renderer);
 void Sch_events_process();
