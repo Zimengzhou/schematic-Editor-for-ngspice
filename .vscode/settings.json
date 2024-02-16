@@ -29,7 +29,7 @@
         "x86gprintrin.h": "c",
         "ia32intrin.h": "c"
     },
-    "editor.glyphMargin": false,
+    "editor.glyphMargin": true,
     "diffEditor.renderMarginRevertIcon": true,
     "notebook.compactView": true,
     "editor.letterSpacing": -0.4,

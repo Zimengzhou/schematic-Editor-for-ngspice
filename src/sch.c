@@ -219,20 +219,19 @@ static void parse_divide_wires()
 // i:    2---------------1
 // j:                    1--------------2
                 if (x1==x1_ && y1==y1_) 
-                {if (x2_ > x2) { ignored[i] = 1; schElements.wires[j].x0 = x2;  }}
+                {if (x2_ > x2) { ignored[i] = 1; schElements.wires[j].x0 = x2; break; }}
 // i:    1---------------2
 // j:                    1--------------2
                 else if (x2 == x1_ && y2==y1_) 
-                {if (x2_> x1) { ignored[i] = 1; schElements.wires[j].x0 = x1; }}
+                {if (x2_> x1) { ignored[i] = 1; schElements.wires[j].x0 = x1; break;}}
 // i:    1---------------2
 // j:                    2--------------1
                 else if (x2==x2_ && y2==y2_) 
-                {if (x1_ > x1) { ignored[i] = 1; schElements.wires[j].x1 = x1; }}
+                {if (x1_ > x1) { ignored[i] = 1; schElements.wires[j].x1 = x1; break;}}
 // i:    2---------------1
 // j:                    2--------------1
                 else if (x2_ == x1 && y2_==y1) 
-                    if (x1_ > x2) { ignored[i] = 1; schElements.wires[j].x1 = x2; }
-                break;
+                    if (x1_ > x2) { ignored[i] = 1; schElements.wires[j].x1 = x2; break;}
             }
 
 //     2             1           1            2
@@ -248,18 +247,17 @@ static void parse_divide_wires()
             else if (!direction_x&& x1_ == x2_) 
             {
                 if (x1==x1_ && y1==y1_) 
-                {if (y2_ > y2) { ignored[i] = 1; schElements.wires[j].y0 = y2; }}
+                {if (y2_ > y2) { ignored[i] = 1; schElements.wires[j].y0 = y2; break;}}
 
                 else if (x2 == x1_ && y2==y1_) 
-                {if (y2_ > y1) { ignored[i] = 1; schElements.wires[j].y0 = y1; }}
+                {if (y2_ > y1) { ignored[i] = 1; schElements.wires[j].y0 = y1; break;}}
 
                 else if (x2==x2_ && y2==y2_) 
-                {if (y1_ > y1) { ignored[i] = 1; schElements.wires[j].y1 = y1; }}
+                {if (y1_ > y1) { ignored[i] = 1; schElements.wires[j].y1 = y1; break;}}
 
                 else if (x2_ == x1 && y2_==y1) 
-                {if (y1_ > y2) { ignored[i] = 1; schElements.wires[j].y1 = y2; }}
+                {if (y1_ > y2) { ignored[i] = 1; schElements.wires[j].y1 = y2; break;}}
 
-                break;
             }
 
             //被包含，但端点不重合
