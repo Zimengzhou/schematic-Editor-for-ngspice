@@ -66,7 +66,7 @@ int main(int argc,char** argv)
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
 
     /*一个Game即一个窗口*/
-    Game *app = createGame("Simplified SZM-OSC", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    Game *app = createGame("szm schematic editor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
             MainWinW, MainWinH, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE,
             Main_screen_gameset);
     // SDL_SetWindowHitTest(app->window, dragWindow, NULL);

@@ -129,7 +129,7 @@ void Sch_draw(SDL_Renderer* renderer)
         SDL_SetRenderDrawColor(renderer, junction.color.r, junction.color.g, junction.color.b, junction.color.a);   
         float x = junction.x * Grid_get_distance() + Grid_get_position().x;
         float y = junction.y * Grid_get_distance() + Grid_get_position().y;
-        SDL_FRect rect = {x-4.1, y-4.1, 8.2, 8.2};
+        SDL_FRect rect = {x-4.6, y-4.6, 9.2, 9.2};
         SDL_RenderFillRectF(renderer, &rect);
     }
 
@@ -195,7 +195,8 @@ static void parse_divide_wires()
         int end[2] = {x2, y2};
         //线段是一个点
         if (x1==x2&&y1==y2) { ignored[i] = 1; continue; }
-
+        int direction_x = 0;
+        if (y1==y2) direction_x = 1;
         for (int j = 0; j<schElements.wire_counts; j++) 
         {
             if (ignored[j]) continue;
@@ -213,6 +214,54 @@ static void parse_divide_wires()
             //线j包含在线i中
             if (bei_baohan1&&bei_baohan2) { ignored[j] = 1; continue; }
 
+            if (direction_x&&y1_==y2_)
+            {
+// i:    2---------------1
+// j:                    1--------------2
+                if (x1==x1_ && y1==y1_) 
+                {if (x2_ > x2) { ignored[i] = 1; schElements.wires[j].x0 = x2;  }}
+// i:    1---------------2
+// j:                    1--------------2
+                else if (x2 == x1_ && y2==y1_) 
+                {if (x2_> x1) { ignored[i] = 1; schElements.wires[j].x0 = x1; }}
+// i:    1---------------2
+// j:                    2--------------1
+                else if (x2==x2_ && y2==y2_) 
+                {if (x1_ > x1) { ignored[i] = 1; schElements.wires[j].x1 = x1; }}
+// i:    2---------------1
+// j:                    2--------------1
+                else if (x2_ == x1 && y2_==y1) 
+                    if (x1_ > x2) { ignored[i] = 1; schElements.wires[j].x1 = x2; }
+                break;
+            }
+
+//     2             1           1            2
+//     |             |           |            |
+//     |             |           |            |
+//     |             |           |            |
+//     |             |           |            |
+//    11            12          22           21
+//    |             |           |            |
+//    |             |           |            |
+//    |             |           |            |
+//    2             2           1            1
+            else if (!direction_x&& x1_ == x2_) 
+            {
+                if (x1==x1_ && y1==y1_) 
+                {if (y2_ > y2) { ignored[i] = 1; schElements.wires[j].y0 = y2; }}
+
+                else if (x2 == x1_ && y2==y1_) 
+                {if (y2_ > y1) { ignored[i] = 1; schElements.wires[j].y0 = y1; }}
+
+                else if (x2==x2_ && y2==y2_) 
+                {if (y1_ > y1) { ignored[i] = 1; schElements.wires[j].y1 = y1; }}
+
+                else if (x2_ == x1 && y2_==y1) 
+                {if (y1_ > y2) { ignored[i] = 1; schElements.wires[j].y1 = y2; }}
+
+                break;
+            }
+
             //被包含，但端点不重合
             int bei_bh_ndd1 = dot_in_segment_not_start_and_end(point1, start, end); 
             int bei_bh_ndd2 = dot_in_segment_not_start_and_end(point2, start, end); 
@@ -221,7 +270,66 @@ static void parse_divide_wires()
             int bh_ndd1 = dot_in_segment_not_start_and_end(start, point1, point2); 
             int bh_ndd2 = dot_in_segment_not_start_and_end(end, point1, point2); 
 
-            //插入分割点的情况
+            //两条线段合并的情况
+            if (bei_bh_ndd1 && bh_ndd1) {
+//          i:             0--------------1
+//          j:  1---------------0               
+                ignored[i] = 1;
+                schElements.wires[j].x0 = schElements.wires[i].x1;
+                schElements.wires[j].y0 = schElements.wires[i].y1;
+                break;
+            }
+            if (bei_bh_ndd1 && bh_ndd2) {
+ //          i:             1--------------0                
+ //          j:  1---------------0               
+                ignored[i] = 1;
+                schElements.wires[j].x0 = schElements.wires[i].x0;
+                schElements.wires[j].y0 = schElements.wires[i].y0;
+                break;
+            }
+            if (bei_bh_ndd2 && bh_ndd1) {
+ //          i:             0--------------1                
+ //          j:  0---------------1               
+                ignored[i] = 1;
+                schElements.wires[j].x1 = schElements.wires[i].x1;
+                schElements.wires[j].y1 = schElements.wires[i].y1;
+ //               SDL_Log("tongxiang bao han le yi tiao line!");
+                break;
+            }
+            if (bei_bh_ndd2 && bh_ndd2) {
+ //          i:             1--------------0                
+ //          j:  0---------------1               
+                ignored[i] = 1;
+                schElements.wires[j].x1 = schElements.wires[i].x0;
+                schElements.wires[j].y1 = schElements.wires[i].y0;
+                break;
+            }
+        }
+    }
+
+    //插入分割点
+    for (int i = 0; i < schElements.wire_counts; i++) 
+    {
+        if (ignored[i]) continue;
+
+        int x1 = schElements.wires[i].x0, y1 = schElements.wires[i].y0, x2 = schElements.wires[i].x1, y2 = schElements.wires[i].y1;
+        int start[2] = {x1, y1};
+        int end[2] = {x2, y2};
+
+        for (int j = 0; j<schElements.wire_counts; j++) 
+        {
+            if (ignored[j]) continue;
+            if (i==j) continue;
+            int x1_ = schElements.wires[j].x0, y1_ = schElements.wires[j].y0; 
+            int x2_ = schElements.wires[j].x1, y2_ = schElements.wires[j].y1;
+            int point1[2] = {x1_, y1_}, point2[2] = {x2_, y2_};
+            //被包含，但端点不重合
+            int bei_bh_ndd1 = dot_in_segment_not_start_and_end(point1, start, end); 
+            int bei_bh_ndd2 = dot_in_segment_not_start_and_end(point2, start, end); 
+            //包含i的一个端点，但端点不重合
+            int bh_ndd1 = dot_in_segment_not_start_and_end(start, point1, point2); 
+            int bh_ndd2 = dot_in_segment_not_start_and_end(end, point1, point2); 
+            //插入分割点
             if (bei_bh_ndd1 && !bh_ndd1 && !bh_ndd2) {
                 schElements.wires[i].divide_points = (int*)realloc(schElements.wires[i].divide_points,
                                                         (schElements.wires[i].divide_counts+1)*2*sizeof(int));
@@ -241,67 +349,30 @@ static void parse_divide_wires()
                 Sch_createJunction(x2_, y2_);   
                 continue;
             }
-
-            //两条线段合并的情况
-            if (bei_bh_ndd1 && bh_ndd1) {
-//          i:             0--------------1
-//          j:  1---------------0               
-                ignored[i] = 1;
-                schElements.wires[j].x0 = schElements.wires[i].x1;
-                schElements.wires[j].y0 = schElements.wires[i].y1;
-                continue;
-            }
-            if (bei_bh_ndd1 && bh_ndd2) {
- //          i:             1--------------0                
- //          j:  1---------------0               
-                ignored[i] = 1;
-                schElements.wires[j].x0 = schElements.wires[i].x0;
-                schElements.wires[j].y0 = schElements.wires[i].y0;
-                continue;
-            }
-            if (bei_bh_ndd2 && bh_ndd1) {
- //          i:             0--------------1                
- //          j:  0---------------1               
-                ignored[i] = 1;
-                schElements.wires[j].x1 = schElements.wires[i].x1;
-                schElements.wires[j].y1 = schElements.wires[i].y1;
- //               SDL_Log("tongxiang bao han le yi tiao line!");
-                continue;
-            }
-            if (bei_bh_ndd2 && bh_ndd2) {
- //          i:             1--------------0                
- //          j:  0---------------1               
-                ignored[i] = 1;
-                schElements.wires[j].x1 = schElements.wires[i].x0;
-                schElements.wires[j].y1 = schElements.wires[i].y0;
-                continue;
-            }
-
         }
     }
 
-    for (int i = 0; i < schElements.wire_counts; i++) 
-    {
-        int x1 = schElements.wires[i].x0;
-        int y1 = schElements.wires[i].y0;
-        int x2 = schElements.wires[i].x1;
-        int y2 = schElements.wires[i].y1;
-        SDL_Log("                                                                     ");
-        SDL_Log("                                                                     ");
-        SDL_Log("_____________________________________________________________________");
-        SDL_Log("线段%d: (%d, %d)->(%d, %d) , 有%d个分割点", i, x1,y1,x2,y2,schElements.wires[i].divide_counts);
 
-        for (int j = 0; j<schElements.wires[i].divide_counts; j++) 
-        {
-            SDL_Log("(%d,%d)",schElements.wires[i].divide_points[2*j],schElements.wires[i].divide_points[2*j+1]);
-        
-        }
-        SDL_Log("                                                                     ");
-        SDL_Log("                                                                     ");
-
-    }
-
-
+//    for (int i = 0; i < schElements.wire_counts; i++) 
+//    {
+//        int x1 = schElements.wires[i].x0;
+//        int y1 = schElements.wires[i].y0;
+//        int x2 = schElements.wires[i].x1;
+//        int y2 = schElements.wires[i].y1;
+//        SDL_Log("                                                                     ");
+//        SDL_Log("                                                                     ");
+//        SDL_Log("_____________________________________________________________________");
+//        SDL_Log("线段%d: (%d, %d)->(%d, %d) , 有%d个分割点", i, x1,y1,x2,y2,schElements.wires[i].divide_counts);
+//
+//        for (int j = 0; j<schElements.wires[i].divide_counts; j++) 
+//        {
+//            SDL_Log("(%d,%d)",schElements.wires[i].divide_points[2*j],schElements.wires[i].divide_points[2*j+1]);
+//        
+//        }
+//        SDL_Log("                                                                     ");
+//        SDL_Log("                                                                     ");
+//
+//    }
     int wire_index = 0;
     for (int i = 0; i < schElements.wire_counts; i++) 
     {

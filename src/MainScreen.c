@@ -58,9 +58,9 @@ static void create()
     texture = SDL_CreateTexture(app->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, 1200, 800);
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
     SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
-    bgColor.r = 240;
-    bgColor.g = 240;
-    bgColor.b = 240;
+    bgColor.r = 245;
+    bgColor.g = 244;
+    bgColor.b = 239;
     bgColor.a = 255;
     
     // MapFontGenerator("generate/aa/myfont.png", "generate/aa/myfont.json", "font/Deng.ttf",fontSize);

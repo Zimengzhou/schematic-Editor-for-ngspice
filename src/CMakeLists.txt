@@ -16,13 +16,13 @@ aux_source_directory(ui UI_SRC)
 #  SDL2::SDL2main 
 #  SDL2::SDL2test)
 
-add_executable(ZMPLC 
+add_executable(szmSchematicEditor 
              ${all_src}
              ${include_src}
              ${UI_SRC})
 
 
-target_link_libraries(ZMPLC PRIVATE 
+target_link_libraries(szmSchematicEditor  PRIVATE 
                     SDL2::SDL2main 
                     SDL2::SDL2 
                     sdl2img
