@@ -178,6 +178,7 @@ static int Compare_small_big(const void *a, const void *b)
     return *(int*)a - *(int*)b;
 }
 
+static void parse_junction();
 static void parse_divide_wires()
 {
     Wire *wires_divided = NULL;    
@@ -351,26 +352,6 @@ static void parse_divide_wires()
     }
 
 
-//    for (int i = 0; i < schElements.wire_counts; i++) 
-//    {
-//        int x1 = schElements.wires[i].x0;
-//        int y1 = schElements.wires[i].y0;
-//        int x2 = schElements.wires[i].x1;
-//        int y2 = schElements.wires[i].y1;
-//        SDL_Log("                                                                     ");
-//        SDL_Log("                                                                     ");
-//        SDL_Log("_____________________________________________________________________");
-//        SDL_Log("线段%d: (%d, %d)->(%d, %d) , 有%d个分割点", i, x1,y1,x2,y2,schElements.wires[i].divide_counts);
-//
-//        for (int j = 0; j<schElements.wires[i].divide_counts; j++) 
-//        {
-//            SDL_Log("(%d,%d)",schElements.wires[i].divide_points[2*j],schElements.wires[i].divide_points[2*j+1]);
-//        
-//        }
-//        SDL_Log("                                                                     ");
-//        SDL_Log("                                                                     ");
-//
-//    }
     int wire_index = 0;
     for (int i = 0; i < schElements.wire_counts; i++) 
     {
@@ -436,21 +417,35 @@ static void parse_divide_wires()
     schElements.wires = wires_divided;
     schElements.wire_counts = wire_index;
     wire_index = 0;
+    parse_junction();
 }
-//整理wires, junction分割wire等等
-static void Sch_combine_wires()
+//整理junction
+static void parse_junction()
 {
-    Wire *wires_combined = NULL;    
-    int max_count = 1000;
-    wires_combined = (Wire*)calloc(sizeof(Wire), max_count);
-
-    for (int i = 0; i < schElements.wire_counts; i++) 
+    Junction* junction = NULL;
+    int index = 0;
+    int ignored[schElements.junction_counts];
+    memset(ignored, 0, sizeof(int)*schElements.junction_counts);
+    for (int i = 0; i < schElements.junction_counts; i++) 
     {
+        if(ignored[i]) continue;
+        int x1 = schElements.junctions[i].x;
+        int y1 = schElements.junctions[i].y;
 
-
+        for (int j = 0; j < schElements.junction_counts; j++)
+        {
+            if (ignored[j]) continue;
+            if (i==j)  continue;
+            if (schElements.junctions[j].x == x1 && schElements.junctions[j].y == y1) 
+                ignored[j] = 1;
+        }
+        index++;
+        junction = (Junction*)realloc(junction, sizeof(Junction)*index);
+        junction[index-1] = schElements.junctions[i];
     }
-
-
+    free(schElements.junctions);
+    schElements.junctions = junction;
+    schElements.junction_counts = index;
 }
 
 
