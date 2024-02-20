@@ -1,7 +1,4 @@
 #include <SDL.h>
-#include <SDL_log.h>
-#include <SDL_scancode.h>
-#include <SDL_timer.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <SDL_image.h>
@@ -52,7 +49,7 @@ void init()
     appBasePath = SDL_GetBasePath();
     widget_init();
     //key_event_init
-   Event_init();
+    Event_init();
 }
 
 int main(int argc,char** argv)

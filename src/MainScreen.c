@@ -15,7 +15,7 @@ SDL_FPoint *pointsOnArc(int Ox, int Oy, int x, int y, float angle, int* pointsNu
     float minA = 42;
     int numbers = SDL_fabsf(angle)/minA + 1;
     *pointsNumber = numbers;
-    SDL_FPoint *points = (SDL_FPoint*)calloc(sizeof(SDL_Point), numbers);
+    SDL_FPoint *points = (SDL_FPoint*)calloc(numbers,sizeof(SDL_Point));
     SDL_FPoint *points_1 = points;
     points->x = x;
     points->y = y;

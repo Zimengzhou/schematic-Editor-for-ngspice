@@ -1,13 +1,9 @@
 #include "sch.h"
+#include "array.h"
+#include "schElementSelector.h"
 #include "event.h"
 #include "schgrid.h"
-#include <SDL_log.h>
-#include <SDL_mouse.h>
-#include <SDL_rect.h>
-#include <SDL_render.h>
-#include <SDL_scancode.h>
 #include <SDL_stdinc.h>
-#include <SDL_surface.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,24 +30,35 @@ static void parse_divide_wires();
 
 void Sch_init()
 {
-    schElements.wires = (Wire*)calloc(sizeof(Wire), 1);
-    schElements.wires[0] = defaultWire;
-    schElements.wire_counts = 0;
+//   schElements.wires = (Wire*)calloc(1,sizeof(Wire));
+//   schElements.wires[0] = defaultWire;
+//   schElements.wire_counts = 0;
+//
+//   schElements.junctions = (Junction*)calloc(1, sizeof(Junction)); 
+//   schElements.junctions[0] = defaultJunction;
+//   schElements.junction_counts = 0;
 
-    schElements.junctions = (Junction*)calloc(sizeof(Junction), 1); 
-    schElements.junctions[0] = defaultJunction;
-    schElements.junction_counts = 0;
+    //Use array.c
+    ArrayNew(&schElements.wire, sizeof(Wire));
+    ArrayNew(&schElements.junction, sizeof(Junction));
 }
 
 void Sch_createWire(int x, int y)
 {
-    schElements.wires = (Wire*)realloc(schElements.wires, sizeof(Wire)*(schElements.wire_counts+1));
-    schElements.wire_counts +=1;
-    schElements.wires[schElements.wire_counts-1]= defaultWire;
-    schElements.wires[schElements.wire_counts-1].x0 = x;
-    schElements.wires[schElements.wire_counts-1].y0 = y;
-    schElements.wires[schElements.wire_counts-1].x1 = x;
-    schElements.wires[schElements.wire_counts-1].y1 = y;
+//    schElements.wires = (Wire*)realloc(schElements.wires, sizeof(Wire)*(schElements.wire_counts+1));
+//    schElements.wire_counts +=1;
+//    schElements.wires[schElements.wire_counts-1]= defaultWire;
+//    schElements.wires[schElements.wire_counts-1].x0 = x;
+//    schElements.wires[schElements.wire_counts-1].y0 = y;
+//    schElements.wires[schElements.wire_counts-1].x1 = x;
+//    schElements.wires[schElements.wire_counts-1].y1 = y;
+//
+    Wire w = defaultWire;
+    w.x0 = x;
+    w.y0 = y;
+    w.x1 = x;
+    w.y1 = y;
+    ArrayAdd(&schElements.wire, &w);    
 }
 
 
@@ -60,8 +67,14 @@ void Sch_draw_wire()
 {
     int x = Grid_get_cursor().x;
     int y = Grid_get_cursor().y;
-    Wire *w1 = &schElements.wires[schElements.wire_counts - 2];
-    Wire *w2 = &schElements.wires[schElements.wire_counts - 1];
+
+
+//   Wire *w1 = &schElements.wires[schElements.wire_counts - 2];
+//   Wire *w2 = &schElements.wires[schElements.wire_counts - 1];
+
+//   use array.c
+    Wire *w1 = (Wire*)ArrayGet(&schElements.wire, schElements.wire.length - 2);
+    Wire *w2 = (Wire*)ArrayGet(&schElements.wire, schElements.wire.length - 1);
 
     static int draw_wire_direction = 1;
 
@@ -94,27 +107,53 @@ void Sch_draw_wire()
 
 void Sch_createJunction(int x, int y)
 {
-    schElements.junctions = (Junction*)realloc(schElements.junctions, sizeof(Junction)*(schElements.junction_counts+1));    
-    schElements.junctions[schElements.junction_counts] = defaultJunction;
-    schElements.junctions[schElements.junction_counts].x = x;
-    schElements.junctions[schElements.junction_counts].y = y;
-    schElements.junction_counts++;
+//    schElements.junctions = (Junction*)realloc(schElements.junctions, sizeof(Junction)*(schElements.junction_counts+1));    
+//    schElements.junctions[schElements.junction_counts] = defaultJunction;
+//    schElements.junctions[schElements.junction_counts].x = x;
+//    schElements.junctions[schElements.junction_counts].y = y;
+//    schElements.junction_counts++;
+    Junction junction= defaultJunction;
+    junction.x = x;
+    junction.y = y;
+    ArrayAdd(&schElements.junction, &junction); 
 }
 
 void Sch_draw(SDL_Renderer* renderer)
 {
     Wire w;
-    for (int i = 0; i < schElements.wire_counts; i++) 
+    //for (int i = 0; i < schElements.wire_counts; i++) 
+    for (int i = 0; i < schElements.wire.length; i++)
     {
-        w = schElements.wires[i];
-        
-        SDL_SetRenderDrawColor(renderer, w.color.r, w.color.g, w.color.b, w.color.a);
+        //w = schElements.wires[i];
+        w = *(Wire*)ArrayGet(&schElements.wire, i);
 
         float x1 = w.x0 * Grid_get_distance() + Grid_get_position().x; 
         float y1 = w.y0 * Grid_get_distance() + Grid_get_position().y; 
         float x2 = w.x1 * Grid_get_distance() + Grid_get_position().x; 
         float y2 = w.y1 * Grid_get_distance() + Grid_get_position().y; 
 
+        if (schElements.selected_wires[i])
+        {
+            SDL_FRect rect;
+            if (w.x0 == w.x1)
+            {
+                rect.x = x1-3;
+                rect.y = y1;
+                rect.w = 6;
+                rect.h = y2-y1;
+            }
+            else if(w.y0 == w.y1)
+            {
+                rect.x = x1;
+                rect.y = y1-3;
+                rect.w = x2-x1;
+                rect.h = 6;
+            }
+            SDL_SetRenderDrawColor(renderer, 100, 100, 255, 180);
+            SDL_RenderFillRectF(renderer, &rect);
+        }
+
+        SDL_SetRenderDrawColor(renderer, w.color.r, w.color.g, w.color.b, w.color.a);
         SDL_RenderDrawLineF(renderer, x1, y1, x2, y2);
         SDL_RenderDrawLineF(renderer, x1-0.5, y1-0.5, x2-0.5, y2-0.5);
         SDL_RenderDrawLineF(renderer, x1+0.5, y1+0.5, x2+0.5, y2+0.5);
@@ -123,12 +162,22 @@ void Sch_draw(SDL_Renderer* renderer)
 
     }
     Junction junction;
-    for (int i = 0; i < schElements.junction_counts; i++) 
+    //for (int i = 0; i < schElements.junction_counts; i++) 
+    for (int i = 0; i < schElements.junction.length; i++)
     {
-        junction = schElements.junctions[i];
-        SDL_SetRenderDrawColor(renderer, junction.color.r, junction.color.g, junction.color.b, junction.color.a);   
+        //junction = schElements.junctions[i];
+        junction = *(Junction*)ArrayGet(&schElements.junction, i);
         float x = junction.x * Grid_get_distance() + Grid_get_position().x;
         float y = junction.y * Grid_get_distance() + Grid_get_position().y;
+
+        if (schElements.selected_junctions[i])
+        {
+            SDL_SetRenderDrawColor(renderer, 100, 100, 255, 180);
+            SDL_FRect r = {x- 8.6, y-8.6, 17.2, 17.2};
+            SDL_RenderFillRectF(renderer, &r);
+        }
+
+        SDL_SetRenderDrawColor(renderer, junction.color.r, junction.color.g, junction.color.b, junction.color.a);   
         SDL_FRect rect = {x-4.6, y-4.6, 9.2, 9.2};
         SDL_RenderFillRectF(renderer, &rect);
     }
@@ -151,6 +200,10 @@ static void Sch_draw_wire_work()
                 Sch_createWire(Grid_get_cursor().x, Grid_get_cursor().y);
                 state = DRAW_WIRE_DRAWING;
             }
+            else if (Mouse_is_clicked(1))    
+            {
+                Sch_setElementsSelected();
+            }
     case_add(DRAW_WIRE_DRAWING)
             Sch_draw_wire();
             if (Key_is_clicked(SDL_SCANCODE_ESCAPE)) { //取消画线
@@ -162,8 +215,10 @@ static void Sch_draw_wire_work()
                 state = DRAW_WIRE_START;
             }
             else if (Mouse_is_clicked(1)) { //以上一条线的终点为起点创建线条
-                Sch_createWire(schElements.wires[schElements.wire_counts-1].x1, 
-                        schElements.wires[schElements.wire_counts-1].y1);
+//                Sch_createWire(schElements.wires[schElements.wire_counts-1].x1, 
+//                        schElements.wires[schElements.wire_counts-1].y1);
+                Sch_createWire(((Wire*)ArrayGet(&schElements.wire, schElements.wire.length-1))->x1, 
+                        ((Wire*)ArrayGet(&schElements.wire, schElements.wire.length-1))->y1);
             }
     switch_case_end
 }
@@ -183,11 +238,11 @@ static void parse_divide_wires()
 {
     Wire *wires_divided = NULL;    
     int max_count = 2000;
-    wires_divided = (Wire*)calloc(sizeof(Wire), max_count);
+    wires_divided = (Wire*)calloc(max_count, sizeof(Wire));
 
-    int *ignored = (int*)calloc(sizeof(int), schElements.wire_counts);
+    int *ignored = (int*)calloc(schElements.wire_counts,sizeof(int));
     memset(ignored, 0, sizeof(int)*schElements.wire_counts);
-    for (int i = 0; i < schElements.wire_counts; i++) 
+//    for (int i = 0; i < schElements.wire_counts; i++) 
     {
         if (ignored[i]) continue;
 

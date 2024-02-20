@@ -3,6 +3,7 @@
 
 #include <SDL.h>
 #include <SDL_pixels.h>
+#include "array.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,9 +37,14 @@ typedef struct Wire
 typedef struct SchElements
 {
     Wire* wires;
+    Array wire;
     int wire_counts;
+    int selected_wires[1000];
+
     Junction* junctions;
+    Array junction;
     int junction_counts;
+    int selected_junctions[1000];
 }SchElements;
 
 
